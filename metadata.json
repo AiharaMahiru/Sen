@@ -1,0 +1,7 @@
+{
+  "name": "ZenTranslate",
+  "description": "A Zen-iOS Hybrid style translation application supporting Text and Image translation via DeepLX, OpenAI, and Gemini.",
+  "requestFramePermissions": [
+    "clipboard-read"
+  ]
+}
