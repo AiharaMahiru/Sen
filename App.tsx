@@ -20,14 +20,14 @@ const App: React.FC = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
-  // Default Global Settings - Forced Gemini defaults for stability
+  // Default Global Settings - Forced DeepLX defaults as requested
   const [globalSettings, setGlobalSettings] = useState<GlobalSettings>({
     theme: 'light',
     defaults: {
       chatProvider: ProviderType.Gemini,
       chatModel: MODELS[ProviderType.Gemini][0].id,
-      translateProvider: ProviderType.Gemini, 
-      translateModel: MODELS[ProviderType.Gemini][0].id,
+      translateProvider: ProviderType.DeepLX, 
+      translateModel: MODELS[ProviderType.DeepLX][0].id,
       searchModel: 'gemini-2.0-flash',
     },
     apiConfig: API_CONFIG // Initial compile-time defaults
@@ -83,8 +83,8 @@ const App: React.FC = () => {
     error: null,
     sourceLang: 'auto',
     targetLang: 'ZH',
-    selectedProvider: ProviderType.Gemini, // Initial fallback
-    selectedModel: MODELS[ProviderType.Gemini][0].id,
+    selectedProvider: ProviderType.DeepLX, // Default to DeepLX
+    selectedModel: MODELS[ProviderType.DeepLX][0].id,
     industry: '',
     attachedImage: null,
     tempImage: null,
@@ -109,8 +109,8 @@ const App: React.FC = () => {
     error: null,
     sourceLang: 'auto',
     targetLang: 'ZH',
-    selectedProvider: ProviderType.Gemini,
-    selectedModel: MODELS[ProviderType.Gemini][0].id,
+    selectedProvider: ProviderType.DeepLX, // Default to DeepLX
+    selectedModel: MODELS[ProviderType.DeepLX][0].id,
     industry: '',
     attachedImage: null,
     tempImage: null,

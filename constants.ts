@@ -13,13 +13,13 @@ export const API_CONFIG: ApiConfig = {
 
 export const PROVIDERS = [
   { type: ProviderType.DeepLX, label: 'DeepLX' },
-  { type: ProviderType.OpenAI, label: 'OpenAI' },
   { type: ProviderType.Gemini, label: 'Gemini' },
+  { type: ProviderType.OpenAI, label: 'OpenAI' },
 ];
 
 export const MODELS: Record<ProviderType, ModelConfig[]> = {
   [ProviderType.DeepLX]: [
-    { id: 'deeplx', name: 'Standard', supportsImage: false },
+    { id: 'deeplx', name: 'Standard', supportsImage: true }, // Enabled via OCR
   ],
   [ProviderType.OpenAI]: [
     { id: 'gpt-4o', name: 'GPT-4o', supportsImage: true },

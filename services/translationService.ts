@@ -2,6 +2,7 @@
 import { API_CONFIG as DEFAULT_API_CONFIG } from '../constants';
 import { ChatMessage, SearchResult, SearchSource, ChatSettings, ProviderType, ApiConfig } from '../types';
 import { GoogleGenAI } from "@google/genai";
+import { createWorker } from 'tesseract.js';
 
 // Mutable configuration state
 let activeConfig: ApiConfig = { ...DEFAULT_API_CONFIG };
@@ -66,6 +67,45 @@ async function safeFetch(url: string, options?: RequestInit): Promise<{ ok: bool
   }
 }
 
+// --- OCR Helper for DeepLX ---
+const getTesseractLang = (code: string) => {
+  const map: Record<string, string> = {
+    'ZH': 'chi_sim',
+    'EN': 'eng',
+    'JA': 'jpn',
+    'KO': 'kor',
+    'FR': 'fra',
+    'DE': 'deu',
+    'ES': 'spa',
+    'RU': 'rus',
+    'PT': 'por',
+    'IT': 'ita',
+    'NL': 'nld',
+    'PL': 'pol',
+    'TR': 'tur',
+    'AR': 'ara',
+    'HI': 'hin',
+    'VI': 'vie',
+    'TH': 'tha',
+    'ID': 'ind',
+    'auto': 'eng' // Fallback for auto
+  };
+  return map[code] || 'eng';
+};
+
+async function performOCR(imageBase64: string, lang: string): Promise<string> {
+  const tesseractLang = getTesseractLang(lang);
+  try {
+    const worker = await createWorker(tesseractLang);
+    const ret = await worker.recognize(imageBase64);
+    await worker.terminate();
+    return ret.data.text;
+  } catch (e: any) {
+    console.error("OCR Failed:", e);
+    throw new Error("Failed to extract text from image. " + e.message);
+  }
+}
+
 /**
  * DeepLX Translation
  */
@@ -101,9 +141,6 @@ async function openAICompletion(
   temperature: number = 0.5,
   signal?: AbortSignal
 ): Promise<any> {
-  // Ensure baseUrl doesn't end with slash if we are appending path, 
-  // but usually users provide "https://api.openai.com/v1". 
-  // We'll normalize slightly.
   const cleanBase = baseUrl.replace(/\/+$/, '');
   const url = `${cleanBase}/chat/completions`;
 
@@ -175,7 +212,6 @@ async function translateGemini({ text, targetLang, imageBase64, model, industry 
   const contents: any = { parts: [] };
   
   if (imageBase64) {
-    // Determine mimeType (default to png if not found in data URI)
     const match = imageBase64.match(/^data:(.*?);base64,(.*)$/);
     const mimeType = match ? match[1] : 'image/png';
     const data = match ? match[2] : imageBase64;
@@ -191,7 +227,6 @@ async function translateGemini({ text, targetLang, imageBase64, model, industry 
   if (text) {
     contents.parts.push({ text: text });
   } else if (!imageBase64) {
-    // Fallback if empty
     contents.parts.push({ text: " " });
   }
 
@@ -334,8 +369,24 @@ export const translationService = {
   setConfig: updateServiceConfig,
 
   translate: async (provider: string, params: TranslateParams) => {
+    // Handling DeepLX with Image (Needs OCR)
+    if (provider === 'DeepLX') {
+      let textToTranslate = params.text;
+      
+      // If image is attached, perform OCR first
+      if (params.imageBase64 && !textToTranslate) {
+         textToTranslate = await performOCR(params.imageBase64, params.sourceLang);
+      }
+      
+      // If still empty (e.g. OCR failed or no input)
+      if (!textToTranslate.trim()) {
+         return "";
+      }
+
+      return translateDeepLX({ ...params, text: textToTranslate });
+    }
+
     switch (provider) {
-      case 'DeepLX': return translateDeepLX(params);
       case 'OpenAI': return translateOpenAI(params);
       case 'Gemini': return translateGemini(params);
       default: throw new Error(`Unknown provider: ${provider}`);
